@@ -1,6 +1,7 @@
-from app import app
+from app import app, mail
 from flask import render_template, request, redirect, url_for, flash
-
+from .forms import ContactForm
+from flask_mail import Message
 
 ###
 # Routing for your application.
@@ -39,6 +40,32 @@ def send_text_file(file_name):
     file_dot_text = file_name + '.txt'
     return app.send_static_file(file_dot_text)
 
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    form = ContactForm()
+
+    if form.validate_on_submit():
+        name = form.name.data
+        email = form.email.data
+        subject = form.subject.data
+        message = form.message.data
+
+        
+        msg = Message(subject,
+                      sender=("Your Name", "your_email@example.com"),
+                      recipients=["to@example.com"])
+        msg.body = f"Name: {name}\nEmail: {email}\n\n{message}"
+        
+        try:
+            mail.send(msg)
+            flash('Your message has been sent successfully!', 'success')
+        except Exception as e:
+            flash('An error occurred while sending the message. Please try again later.', 'danger')
+        
+        return redirect(url_for('home'))  
+
+    return render_template('contact.html', form=form) 
 
 @app.after_request
 def add_header(response):
